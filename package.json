@@ -1,0 +1,58 @@
+{
+  "name": "script-release",
+  "version": "1.0.0",
+  "description": "script-release",
+  "main": "",
+  "scripts": {
+    "start": "echo dev",
+    "build": "echo build",
+    "aloadphp": "php composer dump-autoload -o",
+    "aload": "composer dump-autoload -o",
+    "composerInstall": "composer install",
+    "fullBuild": "npm run build && npm run composerInstall",
+    "newBuild": "npm run fullBuild &&  node -e \"require('./script-release/npm-scripts-release.js').bumpBuild()\"",
+    "ReleaseBreaking": "npm run fullBuild && node -e \"require('./script-release/npm-scripts-release.js').bumpVersionBreaking()\"",
+    "ReleaseFeature": "npm run fullBuild && node -e \"require('./script-release/npm-scripts-release.js').bumpVersionFeature()\"",
+    "ReleaseBugFix": "npm run fullBuild && node -e \"require('./script-release/npm-scripts-release.js').bumpVersionBugfix()\""
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "plugin"
+  ],
+  "author": "saman jafari",
+  "license": "MIT",
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "",
+  "devDependencies": {
+    "@babel/cli": "^7.0.0-beta.51",
+    "@babel/core": "^7.0.0-beta.51",
+    "@babel/preset-env": "^7.0.0-beta.51",
+    "@babel/register": "^7.0.0-beta.51",
+    "babelify": "^8.0.0",
+    "bootstrap": "^4.1.1",
+    "browser-sync": "^2.24.5",
+    "del": "^3.0.0",
+    "gulp": "^4.0.0",
+    "gulp-autoprefixer": "^5.0.0",
+    "gulp-babel": "^8.0.0-beta.2",
+    "gulp-imagemin": "^4.1.0",
+    "gulp-include": "^2.3.1",
+    "gulp-livereload": "^3.8.1",
+    "gulp-sass": "^4.0.1",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-strip-css-comments": "^2.0.0",
+    "gulp-uglify": "^3.0.0",
+    "jquery": "^3.3.1",
+    "parsleyjs": "^2.8.1",
+    "popper.js": "^1.14.3",
+    "prettier": "1.4.0-beta",
+    "tether": "^1.4.4",
+    "vinyl-buffer": "latest"
+  },
+  "dependencies": {}
+}
