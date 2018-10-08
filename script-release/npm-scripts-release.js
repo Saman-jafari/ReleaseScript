@@ -40,24 +40,46 @@ function ReadVersionFile() {
  * @returns {Promise<any>}
  */
 function writeNewVersion(version) {
-  return new Promise(function(resolve, reject) {
-    setTimeout(function() {
+    return new Promise(function(resolve, reject) {
+        setTimeout(function() {
+            let contentAfterBump = JSON.stringify(version);
+            fs.writeFile("./script-release/version-build.json", contentAfterBump, function(err) {
+                if (err) {
+                    reject(console.log(err));
+                }
+                let branchName = "Release-" + version.version + "-Build-" + version.build;
+                let PromisePackageJson = new Promise(function(resolve) {
+                    fs.readFile("../package.json", "utf8", function(err, data) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        let packagejson = JSON.parse(data);
+                        packagejson.version = version.version;
+                        console.log(packagejson);
+                        resolve(packagejson);
+                    });
+                });
+                PromisePackageJson.then(function(result) {
+                    fs.writeFile("../package.json", JSON.stringify(result, null, 2), function(err) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        console.log("gitignore was saved!");
+                    });
+                });
 
-      let contentAfterBump = JSON.stringify(version);
-      fs.writeFile("./script-release/version-build.json", contentAfterBump, function(err) {
-        if (err) {
-          reject(console.log(err));
-        }
-
-        let branchName = "Release-" + version.version + "-Build-" + version.build;
-        child = exec("git add --all && git commit -m \"NewBuildVersion-" + branchName , function(error, stdout, stderr) {
-          console.log("stdout: " + stdout);
-          console.log("stderr: " + stderr);
-        });
-        resolve(branchName);
-      });
-    }, 2000);
-  });
+                child = exec('git add --all && git commit -m "NewBuildVersion-' + branchName, function(
+                    error,
+                    stdout,
+                    stderr
+                ) {
+                    console.log("stdout: " + stdout);
+                    console.log("stderr: " + stderr);
+                });
+                resolve(branchName);
+            });
+        }, 2000);
+    });
 }
 
 /**
