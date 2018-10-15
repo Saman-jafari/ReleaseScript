@@ -55,6 +55,7 @@ function writeNewVersion(version) {
             fs.writeFile("./script-release/version-build.json", contentAfterBump, function(err) {
                 if (err) {
                     reject(console.log(err));
+                    return
                 }
                 let branchName = "Release-" + version.version + "-Build-" + version.build;
                 let PromisePackageJson = new Promise(function(resolve) {
@@ -72,6 +73,7 @@ function writeNewVersion(version) {
                     fs.writeFile("./package.json", JSON.stringify(result, null, 2), function(err) {
                         if (err) {
                             console.log(err);
+                            return
                         }
                         console.log("gitignore was saved!");
                     });
