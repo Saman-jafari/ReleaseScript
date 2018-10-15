@@ -1,6 +1,6 @@
 const fs = require("fs");
 const exec = require("child_process").exec;
-const ignore = require("./ignore-config");
+const ignore = "./.ignore";
 let child;
 
 /**
@@ -8,14 +8,20 @@ let child;
  * @returns {Promise<any>}
  */
 function editGitIgnore() {
-  return new Promise(function(resolve, reject) {
-    fs.writeFile("./.gitignore", ignore , function(err) {
-      if (err) {
-        reject(console.log(err));
-      }
-      resolve(console.log("gitignore was saved!"));
+    return new Promise(function(resolve, reject) {
+        fs.readFile(ignore, "utf8", function(err, data) {
+            if (err) {
+                return
+            }
+            fs.writeFile("./.gitignore", data , function(err) {
+                if (err) {
+                    reject(console.log(err));
+                }
+                resolve(console.log("gitignore was saved!"));
+            });
+        });
+
     });
-  });
 }
 
 /**
@@ -24,14 +30,14 @@ function editGitIgnore() {
  * @constructor
  */
 function ReadVersionFile() {
-  return new Promise(function(resolve, reject) {
-    fs.readFile("./script-release/version-build.json", "utf8", function(err, data) {
-      if (err) {
-        reject(console.log(err));
-      }
-      resolve(JSON.parse(data));
+    return new Promise(function(resolve, reject) {
+        fs.readFile("./script-release/version-build.json", "utf8", function(err, data) {
+            if (err) {
+                reject(console.log(err));
+            }
+            resolve(JSON.parse(data));
+        });
     });
-  });
 }
 
 /**
@@ -39,6 +45,7 @@ function ReadVersionFile() {
  * @param version
  * @returns {Promise<any>}
  */
+
 function writeNewVersion(version) {
     return new Promise(function(resolve, reject) {
         setTimeout(function() {
@@ -49,7 +56,7 @@ function writeNewVersion(version) {
                 }
                 let branchName = "Release-" + version.version + "-Build-" + version.build;
                 let PromisePackageJson = new Promise(function(resolve) {
-                    fs.readFile("../package.json", "utf8", function(err, data) {
+                    fs.readFile("./package.json", "utf8", function(err, data) {
                         if (err) {
                             console.log(err);
                         }
@@ -60,7 +67,7 @@ function writeNewVersion(version) {
                     });
                 });
                 PromisePackageJson.then(function(result) {
-                    fs.writeFile("../package.json", JSON.stringify(result, null, 2), function(err) {
+                    fs.writeFile("./package.json", JSON.stringify(result, null, 2), function(err) {
                         if (err) {
                             console.log(err);
                         }
@@ -82,24 +89,25 @@ function writeNewVersion(version) {
     });
 }
 
+
 /**
  *
  * @param branchName
  * @returns {Promise<any>}
  */
 function checkoutToNeWBranch(branchName) {
-  return new Promise(function(resolve, reject) {
-    setTimeout(function() {
-      child = exec("git checkout -b " + branchName, function(error, stdout, stderr) {
-        console.log("stdout: " + stdout);
-        console.log("stderr: " + stderr);
-        if (error) {
-          reject(console.log(error));
-        }
-      });
-      resolve(branchName);
-    }, 4000);
-  });
+    return new Promise(function(resolve, reject) {
+        setTimeout(function() {
+            child = exec("git checkout -b " + branchName, function(error, stdout, stderr) {
+                console.log("stdout: " + stdout);
+                console.log("stderr: " + stderr);
+                if (error) {
+                    reject(console.log(error));
+                }
+            });
+            resolve(branchName);
+        }, 4000);
+    });
 }
 
 /**
@@ -109,17 +117,20 @@ function checkoutToNeWBranch(branchName) {
  * @constructor
  */
 function GitCommitRmCached(branchName) {
-  return new Promise(function(resolve, reject) {
-    setTimeout(function() {
+    return new Promise(function(resolve, reject) {
+        setTimeout(function() {
 
-      child = exec("git rm -r --cached . && git add --all && git commit -m \"" + branchName + "\"", function(error, stdout, stderr) {
-        if (error !== null) {
-          reject(console.log("exec error: " + error));
-        }
-        resolve(console.log("stdout: " + stdout) +"\n\n"+ console.log("stderr: " + stderr));
-      });
-    }, 4000);
-  });
+            child = exec("git rm -r --cached . && git add --all && git commit -m \"" + branchName + "\"",{maxBuffer: 1024 * 1024}, function(error, stdout, stderr) {
+                if (error !== null) {
+                    console.log("exec error: " + error);
+                    reject();
+                }
+                console.log("exec error: " + stderr);
+                console.log("stdout: " + stdout);
+                resolve();
+            });
+        }, 4000);
+    });
 }
 
 /**
@@ -127,87 +138,213 @@ function GitCommitRmCached(branchName) {
  * @returns {Promise<void>}
  */
 module.exports.bumpBuild = async function bumpBuild() {
-  let content = await ReadVersionFile();
-  let build = parseInt(content.build);
-  let version = {
-    version: content.version,
-    build: ++build
-  };
-  let branchName = await writeNewVersion(version);
-  let NewBranchAfterCreation = await checkoutToNeWBranch(branchName);
-  console.log("newVersionAdded");
-  await editGitIgnore();
-  console.log("gitIgnoreUpdated");
-  await GitCommitRmCached(NewBranchAfterCreation);
-  console.log("cache removed and commit created by name of :" + NewBranchAfterCreation);
-  console.log("Done...");
+    let content;
+    let branchName;
+    let NewBranchAfterCreation;
+    let build;
+    let version;
+    try{
+        content = await ReadVersionFile();
+        build = parseInt(content.build);
+        version = {
+            version: content.version,
+            build: ++build,
+        };
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        branchName = await writeNewVersion(version);
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        NewBranchAfterCreation = await checkoutToNeWBranch(branchName);
+        console.log("newVersionAdded");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        await editGitIgnore();
+        console.log("gitIgnoreUpdated");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        await GitCommitRmCached(NewBranchAfterCreation);
+        console.log("cache removed and commit created by name of :" + NewBranchAfterCreation);
+        console.log("Done...");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
 };
 /**
  *
  * @returns {Promise<void>}
  */
 module.exports.bumpVersionBreaking = async function bumpVersionBreaking() {
-  let content = await ReadVersionFile();
-  let build = parseInt(content.build);
-  let versionbump = content.version.split(".");
-  versionbump = [++versionbump[0],versionbump[1],versionbump[2]];
-  versionbump = versionbump.join(".");
-  let version = {
-    version: versionbump,
-    build: ++build
-  };
-  let branchName = await writeNewVersion(version);
-  let NewBranchAfterCreation = await checkoutToNeWBranch(branchName);
-  console.log("newVersionAdded");
-  await editGitIgnore();
-  console.log("gitIgnoreUpdated");
-  await GitCommitRmCached(NewBranchAfterCreation);
-  console.log("cache removed and commit created by name of :" + NewBranchAfterCreation);
-  console.log("Done...");
+    let content;
+    let branchName;
+    let NewBranchAfterCreation;
+    let build;
+    let versionbump;
+    let version;
+    try{
+        content = await ReadVersionFile();
+        build = parseInt(content.build);
+        versionbump = content.version.split(".");
+        versionbump = [++versionbump[0],versionbump[1],versionbump[2]];
+        versionbump = versionbump.join(".");
+        version = {
+            version: versionbump,
+            build: ++build,
+        };
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+
+    try{
+        branchName = await writeNewVersion(version);
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        NewBranchAfterCreation = await checkoutToNeWBranch(branchName);
+        console.log("newVersionAdded");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        await editGitIgnore();
+        console.log("gitIgnoreUpdated");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        await GitCommitRmCached(NewBranchAfterCreation);
+        console.log("cache removed and commit created by name of :" + NewBranchAfterCreation);
+        console.log("Done...");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
 };
 /**
  *
  * @returns {Promise<void>}
  */
 module.exports.bumpVersionFeature = async function bumpVersionFeature() {
-  let content = await ReadVersionFile();
-  let build = parseInt(content.build);
-  let versionbump = content.version.split(".");
-  versionbump = [versionbump[0],++versionbump[1],versionbump[2]];
-  versionbump = versionbump.join(".");
-  let version = {
-    version: versionbump,
-    build: ++build
-  };
-  let branchName = await writeNewVersion(version);
-  let NewBranchAfterCreation = await checkoutToNeWBranch(branchName);
-  console.log("newVersionAdded");
-  await editGitIgnore();
-  console.log("gitIgnoreUpdated");
-  await GitCommitRmCached(NewBranchAfterCreation);
-  console.log("cache removed and commit created by name of :" + NewBranchAfterCreation);
-  console.log("Done...");
+    let content;
+    let branchName;
+    let NewBranchAfterCreation;
+    let build;
+    let versionbump;
+    let version;
+    try{
+        content = await ReadVersionFile();
+        build = parseInt(content.build);
+        versionbump = content.version.split(".");
+        versionbump = [versionbump[0],++versionbump[1],versionbump[2]];
+        versionbump = versionbump.join(".");
+        version = {
+            version: versionbump,
+            build: ++build,
+        };
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+
+    try{
+        branchName = await writeNewVersion(version);
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        NewBranchAfterCreation = await checkoutToNeWBranch(branchName);
+        console.log("newVersionAdded");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        await editGitIgnore();
+        console.log("gitIgnoreUpdated");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        await GitCommitRmCached(NewBranchAfterCreation);
+        console.log("cache removed and commit created by name of :" + NewBranchAfterCreation);
+        console.log("Done...");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
 };
 /**
  *
  * @returns {Promise<void>}
  */
 module.exports.bumpVersionBugfix = async function bumpVersionBugfix() {
-  let content = await ReadVersionFile();
-  let build = parseInt(content.build);
-  let versionbump = content.version.split(".");
-  versionbump = [versionbump[0],versionbump[1],++versionbump[2]];
-  versionbump = versionbump.join(".");
-  let version = {
-    version: versionbump,
-    build: ++build
-  };
-  let branchName = await writeNewVersion(version);
-  let NewBranchAfterCreation = await checkoutToNeWBranch(branchName);
-  console.log("newVersionAdded");
-  await editGitIgnore();
-  console.log("gitIgnoreUpdated");
-  await GitCommitRmCached(NewBranchAfterCreation);
-  console.log("cache removed and commit created by name of :" + NewBranchAfterCreation);
-  console.log("Done...");
+    let content;
+    let branchName;
+    let NewBranchAfterCreation;
+    let build;
+    let versionbump;
+    let version;
+    try{
+        content = await ReadVersionFile();
+        build = parseInt(content.build);
+        versionbump = content.version.split(".");
+        versionbump = [versionbump[0],versionbump[1],++versionbump[2]];
+        versionbump = versionbump.join(".");
+        version = {
+            version: versionbump,
+            build: ++build,
+        };
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+
+    try{
+        branchName = await writeNewVersion(version);
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        NewBranchAfterCreation = await checkoutToNeWBranch(branchName);
+        console.log("newVersionAdded");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        await editGitIgnore();
+        console.log("gitIgnoreUpdated");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
+    try{
+        await GitCommitRmCached(NewBranchAfterCreation);
+        console.log("cache removed and commit created by name of :" + NewBranchAfterCreation);
+        console.log("Done...");
+    } catch (e) {
+        console.log('error happened: ' + e);
+        throw e;
+    }
 };
