@@ -1,21 +1,22 @@
 const fs = require("fs");
 const exec = require("child_process").exec;
-const ignore = "./.ignore";
+const ignore = "./script-release/.ignore";
 let child;
 
 /**
  *
  * @returns {Promise<any>}
  */
-function editGitIgnore() {
+ function editGitIgnore() {
     return new Promise(function(resolve, reject) {
-        fs.readFile(ignore, "utf8", function(err, data) {
+        fs.readFile('./script-release/.ignore', "utf8", function(err, data) {
             if (err) {
                 return
             }
             fs.writeFile("./.gitignore", data , function(err) {
                 if (err) {
                     reject(console.log(err));
+                    return
                 }
                 resolve(console.log("gitignore was saved!"));
             });
@@ -34,6 +35,7 @@ function ReadVersionFile() {
         fs.readFile("./script-release/version-build.json", "utf8", function(err, data) {
             if (err) {
                 reject(console.log(err));
+                return
             }
             resolve(JSON.parse(data));
         });

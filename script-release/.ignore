@@ -1,0 +1,17 @@
+composer.phar
+.idea/
+node_modules/
+assets
+tests
+.babelrc
+.gitattributes
+composer.json
+composer.lock
+configGulp.js
+gulpfile.babel.js
+package-lock.json
+package.json
+readme.md
+yarn.lock
+script-release/
+.prettierrc
