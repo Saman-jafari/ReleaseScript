@@ -202,7 +202,7 @@ module.exports.bumpVersionBreaking = async function bumpVersionBreaking() {
         content = await ReadVersionFile();
         build = parseInt(content.build);
         versionbump = content.version.split(".");
-        versionbump = [++versionbump[0],versionbump[1],versionbump[2]];
+        versionbump = [++versionbump[0],versionbump[1] = 0,versionbump[2] = 0];
         versionbump = versionbump.join(".");
         version = {
             version: versionbump,
@@ -257,7 +257,7 @@ module.exports.bumpVersionFeature = async function bumpVersionFeature() {
         content = await ReadVersionFile();
         build = parseInt(content.build);
         versionbump = content.version.split(".");
-        versionbump = [versionbump[0],++versionbump[1],versionbump[2]];
+        versionbump = [versionbump[0],++versionbump[1],versionbump[2] = 0];
         versionbump = versionbump.join(".");
         version = {
             version: versionbump,
