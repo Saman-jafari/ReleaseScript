@@ -79,7 +79,7 @@ function writeNewVersion(version) {
                     });
                 });
 
-                child = exec('git add --all && git commit -m "NewBuildVersion-' + branchName, function(
+                child = exec(`git add --all && git commit -m "NewBuildVersion-${branchName}`, function(
                     error,
                     stdout,
                     stderr
